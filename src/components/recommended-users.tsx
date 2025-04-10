@@ -4,8 +4,11 @@ import Link from "next/link";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import FollowButton from "./follow-button";
 
+type Users = Awaited<ReturnType<typeof getRandomUsers>>["users"];
+type User = Users[number];
+
 export async function RecommendedUsers() {
-  const { users } = await getRandomUsers();
+  const { users }: any = await getRandomUsers();
   if (users?.length === 0) return null;
 
   return (
@@ -16,7 +19,7 @@ export async function RecommendedUsers() {
       <CardContent>
         <div className="space-y-4">
           {users &&
-            users?.map((user) => (
+            users?.map((user: any) => (
               <div
                 key={user?.id}
                 className="flex gap-2 items-center justify-between "
