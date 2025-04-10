@@ -29,6 +29,7 @@ function CreatePost() {
         setImageUrl("");
         setShowImageUpload(false);
         toast.success(result?.message || "Post created successfully");
+        setIsPosting(false);
       }
     } catch (error: any) {
       console.error("Error creating post:", error.message);
