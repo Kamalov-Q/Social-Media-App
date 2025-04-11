@@ -1,5 +1,5 @@
 "use client";
-import { getPosts, toggleLike } from "@/actions/post.action";
+import { createComment, getPosts, toggleLike } from "@/actions/post.action";
 import { Card, CardContent } from "./ui/card";
 import Link from "next/link";
 import { Avatar, AvatarImage } from "./ui/avatar";
@@ -13,6 +13,7 @@ import {
   SendIcon,
 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
+import toast from "react-hot-toast";
 
 type Posts = Awaited<ReturnType<typeof getPosts>>["posts"];
 type Post = Posts[number];
@@ -48,7 +49,22 @@ function PostCard({ post, dbUserId }: { post: Post; dbUserId: string | null }) {
     }
   };
 
-  const handleAddComment = async () => {};
+  const handleAddComment = async () => {
+    if (!newComment?.trim() || isCommenting) return;
+
+    try {
+      setIsCommenting(true);
+      const result = await createComment(post?.id, newComment);
+      if (result?.success) {
+        toast?.success(result?.message || "Comment added successfully");
+        setNewComment("");
+      }
+    } catch (error: any) {
+      toast?.error(error?.message || "Failed to add comment");
+    } finally {
+      setIsCommenting(false);
+    }
+  };
 
   const handleDeletePost = async () => {};
 
@@ -145,7 +161,7 @@ function PostCard({ post, dbUserId }: { post: Post; dbUserId: string | null }) {
               variant="ghost"
               size="sm"
               className="text-muted-foreground gap-2 hover:text-blue-500"
-                onClick={() => setShowComments((prev) => !prev)}
+              onClick={() => setShowComments((prev) => !prev)}
             >
               <MessageCircleIcon
                 className={`size-5 ${
