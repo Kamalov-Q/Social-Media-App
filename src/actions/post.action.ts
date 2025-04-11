@@ -71,9 +71,6 @@ export async function getPosts() {
           },
         },
       },
-      where: {
-        authorId: userId,
-      },
     });
 
     return {
