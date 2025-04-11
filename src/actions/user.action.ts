@@ -101,18 +101,10 @@ export async function getRandomUsers() {
       },
     });
 
-    return {
-      users: randomUsers,
-      message: "Random users fetched successfully",
-      success: true,
-    };
+    return randomUsers;
   } catch (error: any) {
     console.log("Error: ", error);
-    return {
-      users: [],
-      message: error.message,
-      success: false,
-    };
+    return [];
   }
 }
 

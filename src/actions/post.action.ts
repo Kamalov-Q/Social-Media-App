@@ -134,15 +134,15 @@ export async function toggleLike(postId: string) {
         }),
         ...(post?.authorId !== userId
           ? [
-              prisma?.notification?.create({
-                data: {
-                  type: "LIKE",
-                  userId: post?.authorId, //user being followed
-                  creatorId: userId, //user who followed
-                  postId,
-                },
-              }),
-            ]
+            prisma?.notification?.create({
+              data: {
+                type: "LIKE",
+                userId: post?.authorId, //user being followed
+                creatorId: userId, //user who followed
+                postId,
+              },
+            }),
+          ]
           : []),
       ]);
     }
@@ -158,4 +158,92 @@ export async function toggleLike(postId: string) {
   }
 }
 
-export async function createComment() {}
+export async function createComment(postId: string, content: string) {
+  try {
+    const userId = await getDbUserId();
+    if (!userId) throw new Error("Unauthenticated");
+    if (!content) throw new Error("Comment cannot be empty");
+
+    const post = await prisma.post.findUnique({
+      where: {
+        id: postId,
+      },
+      select: {
+        authorId: true,
+      },
+    });
+
+    if (!post) throw new Error("Post not found");
+
+    //Create comment and notification in a transaction
+    const [comment] = await prisma.$transaction(async (tx) => {
+      //Create comment first
+      const newComment = await tx.comment.create({
+        data: {
+          content,
+          postId,
+          authorId: userId,
+        },
+      });
+      //Create notification if the comment is not on your own post
+
+      if (post?.authorId !== userId) {
+        await tx.notification?.create({
+          data: {
+            type: "COMMENT",
+            userId: post?.authorId, //user being followed
+            creatorId: userId, //user who followed
+            postId,
+            commentId: newComment?.id,
+          },
+        });
+      }
+      return [newComment];
+    });
+
+    revalidatePath(`/`);
+    return {
+      success: true,
+      comment,
+      message: "Comment created successfully",
+    };
+  } catch (error: any) {
+    console.error("Error creating comment:", error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+export async function deletePost(postId: string) {
+  try {
+    const userId = await getDbUserId();
+
+    const post = await prisma.post.findUnique({
+      where: {
+        id: postId
+      },
+      select: {
+        authorId: true,
+      }
+    })
+
+    if (!post) throw new Error("Post not found");
+    if (post?.authorId !== userId) throw new Error("Unauthorized - no delete permission");
+
+    const deletedPost = await prisma.post.delete({
+      where: {
+        id: postId,
+      }
+    })
+
+    revalidatePath("/"); //purge the cache
+    return {
+      success: true,
+      message: "Post deleted successfully",
+      data: deletedPost,
+    }
+
+  } catch (error: any) {
+    console.error("Error deleting post:", error.message);
+    return { success: false, message: error.message };
+  }
+}
