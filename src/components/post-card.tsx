@@ -1,5 +1,10 @@
 "use client";
-import { createComment, getPosts, toggleLike } from "@/actions/post.action";
+import {
+  createComment,
+  deletePost,
+  getPosts,
+  toggleLike,
+} from "@/actions/post.action";
 import { Card, CardContent } from "./ui/card";
 import Link from "next/link";
 import { Avatar, AvatarImage } from "./ui/avatar";
@@ -14,6 +19,8 @@ import {
 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import toast from "react-hot-toast";
+import { formatDistanceToNow } from "date-fns";
+import DeleteAlertDialog from "./delete-alert-dialog";
 
 type Posts = Awaited<ReturnType<typeof getPosts>>["posts"];
 type Post = Posts[number];
@@ -66,7 +73,22 @@ function PostCard({ post, dbUserId }: { post: Post; dbUserId: string | null }) {
     }
   };
 
-  const handleDeletePost = async () => {};
+  const handleDeletePost = async () => {
+    if (isDeleting) return;
+
+    try {
+      setIsDeleting(true);
+      const result = await deletePost(post?.id);
+      if (result?.success)
+        toast?.success(result?.message || "Post deleted successfully");
+      else throw new Error(result?.message || "Failed to delete post");
+    } catch (error: any) {
+      console.error("Error deleting post:", error);
+      toast?.error(error?.message || "Failed to delete post");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <Card className="overflow-hidden">
@@ -95,17 +117,17 @@ function PostCard({ post, dbUserId }: { post: Post; dbUserId: string | null }) {
                     </Link>
                     <span>•</span>
                     <span>
-                      {/* {formatDistanceToNow(new Date(post.createdAt))} ago */}
+                      {formatDistanceToNow(new Date(post.createdAt))} ago
                     </span>
                   </div>
                 </div>
                 {/* Check if current user is the post author */}
-                {/* {dbUserId === post.author.id && (
+                {dbUserId === post.author.id && (
                   <DeleteAlertDialog
                     isDeleting={isDeleting}
                     onDelete={handleDeletePost}
                   />
-                )} */}
+                )}
               </div>
               <p className="mt-2 text-sm text-foreground break-words">
                 {post.content}
@@ -179,22 +201,28 @@ function PostCard({ post, dbUserId }: { post: Post; dbUserId: string | null }) {
                 {/* DISPLAY COMMENTS */}
                 {post.comments.map((comment) => (
                   <div key={comment.id} className="flex space-x-3">
-                    <Avatar className="size-8 flex-shrink-0">
-                      <AvatarImage
-                        src={comment.author.image ?? "/avatar.png"}
-                      />
-                    </Avatar>
+                    <Link href={`/profile/${comment?.author?.username}`}>
+                      <Avatar className="size-8 flex-shrink-0">
+                        <AvatarImage
+                          src={comment.author.image ?? "/avatar.png"}
+                        />
+                      </Avatar>
+                    </Link>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="font-medium text-sm">
-                          {comment.author.name}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          @{comment.author.username}
-                        </span>
+                        <Link href={`/profile/${comment?.author?.username}`}>
+                          <span className="font-medium text-sm">
+                            {comment.author.name}
+                          </span>
+                        </Link>
+                        <Link href={`/profile/${comment?.author?.username}`}>
+                          <span className="text-sm text-muted-foreground">
+                            @{comment.author.username}
+                          </span>
+                        </Link>
                         <span className="text-sm text-muted-foreground">·</span>
                         <span className="text-sm text-muted-foreground">
-                          {/* {formatDistanceToNow(new Date(comment.createdAt))} ago */}
+                          {formatDistanceToNow(new Date(comment.createdAt))} ago
                         </span>
                       </div>
                       <p className="text-sm break-words">{comment.content}</p>
