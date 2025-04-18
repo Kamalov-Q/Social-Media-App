@@ -10,7 +10,7 @@ export async function createPost(content: string, image: string) {
 
     if (!userId) throw new Error("Unauthenticated");
 
-    const post = await prisma.post.create({
+    const post = await prisma.post?.create({
       data: {
         content,
         image,
@@ -31,7 +31,7 @@ export async function getPosts() {
     const userId = await getDbUserId();
     if (!userId) throw new Error("Unauthenticated");
 
-    const posts = await prisma.post.findMany({
+    const posts = await prisma?.post?.findMany({
       orderBy: {
         createdAt: "desc",
       },
@@ -99,7 +99,7 @@ export async function toggleLike(postId: string) {
       },
     });
 
-    const post = await prisma.post.findUnique({
+    const post = await prisma?.post?.findUnique({
       where: {
         id: postId,
       },
@@ -112,7 +112,7 @@ export async function toggleLike(postId: string) {
 
     if (existingLike) {
       //unlike
-      await prisma.like.delete({
+      await prisma?.like?.delete({
         where: {
           userId_postId: {
             userId,
